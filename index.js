@@ -12,7 +12,6 @@ class Cormorants {
     blogName,
     corpus,
     bannedWords = [],
-    model = 'bert-large-cased-whole-word-masking-finetuned-squad',
     maxCorpusLength = 10000,
   }) {
     this.client = tumblr.createClient({
@@ -22,7 +21,6 @@ class Cormorants {
       token_secret: accessTokenSecret,
       returnPromises: true,
     });
-    this.model = model;
     this.corpus = corpus;
     this.maxCorpusLength = maxCorpusLength;
     this.blogName = blogName;
@@ -82,12 +80,7 @@ class Cormorants {
   }
 
   async answer(question) {
-    const model = await initModel({
-      name: this.model,
-    });
-    const qaClient = await QAClient.fromOptions({
-      model,
-    });
+    const qaClient = await QAClient.fromOptions();
     const { text } = await qaClient.predict(question, this.getCorpus());
     if (this.badWords.isProfane(text)) {
       console.log(`Disregarding: ${text}`);
