@@ -1,6 +1,6 @@
 const { map, sample, random, upperFirst, compact } = require('lodash');
 const tumblr = require('tumblr.js');
-const { QAClient, initModel, RuntimeType } = require('question-answering');
+const { QAClient, initModel } = require('question-answering');
 const BadWords = require('bad-words');
 
 class Cormorants {
@@ -87,7 +87,6 @@ class Cormorants {
     });
     const qaClient = await QAClient.fromOptions({
       model,
-      runtime: RuntimeType.TFJS,
     });
     const { text } = await qaClient.predict(question, this.getCorpus());
     if (this.badWords.isProfane(text)) {

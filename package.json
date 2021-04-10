@@ -6,10 +6,12 @@
   "author": "Shah Kashani",
   "license": "ISC",
   "dependencies": {
+    "@tensorflow/tfjs-node": "3.3.0",
     "bad-words": "^3.0.4",
     "dotenv": "^8.2.0",
     "lodash": "^4.17.21",
     "question-answering": "^3.0.0",
+    "question-answering-tf3": "^3.0.0",
     "tumblr.js": "^3.0.0"
   }
 }
