@@ -1,6 +1,6 @@
 const { map, sample, random, upperFirst, compact } = require('lodash');
 const tumblr = require('tumblr.js');
-const { QAClient, initModel } = require('question-answering');
+const { QAClient, initModel } = require('question-answering-tf3');
 const BadWords = require('bad-words');
 
 class Cormorants {
