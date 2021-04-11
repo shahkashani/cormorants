@@ -9,6 +9,7 @@ const {
   CONSUMER_SECRET,
   BLOG_NAME,
   BANNED_WORDS,
+  CORMORANTS_MODEL_NAME,
 } = process.env;
 
 const corpus = process.argv[2];
@@ -25,6 +26,7 @@ const mysteries = new Cormorants({
   consumerKey: CONSUMER_KEY,
   consumerSecret: CONSUMER_SECRET,
   blogName: BLOG_NAME,
+  modelName: CORMORANTS_MODEL_NAME,
   bannedWords: (BANNED_WORDS || '').split(','),
 });
 

@@ -11,9 +11,9 @@ class Cormorants {
     accessTokenSecret,
     blogName,
     corpus,
+    modelName = 'deepset/bert-base-cased-squad2',
     bannedWords = [],
     maxCorpusLength = 10000,
-    forceAnswer,
   }) {
     this.client = tumblr.createClient({
       consumer_key: consumerKey,
@@ -22,11 +22,11 @@ class Cormorants {
       token_secret: accessTokenSecret,
       returnPromises: true,
     });
+    this.modelName = modelName;
     this.corpus = corpus;
     this.maxCorpusLength = maxCorpusLength;
     this.blogName = blogName;
     this.bannedWords;
-    this.forceAnswer = forceAnswer;
     this.badWords = new BadWords();
     this.badWords.addWords(...bannedWords);
     this.badWords.removeWords('God');
@@ -56,12 +56,10 @@ class Cormorants {
 
   filter(post) {
     if (post.content.some(({ type }) => type !== 'text')) {
-      console.log(`Skipping (media): ${this.question(post)}`);
       return false;
     }
     const text = this.question(post);
     if (this.badWords.isProfane(text)) {
-      console.log(`Skipping (content): ${this.question(post)}`);
       return false;
     }
     return true;
@@ -73,7 +71,7 @@ class Cormorants {
 
   async answer(question) {
     // Truly batshit crazy, but Tensorflow versions step all over each other so we need to sandbox it.
-    const cmd = `node "${__dirname}/ask.js" "${question}" "${this.corpus}" ${this.maxCorpusLength}`;
+    const cmd = `node "${__dirname}/ask.js" "${this.modelName}" "${question}" "${this.corpus}" ${this.maxCorpusLength}`;
     const result = exec(cmd, { silent: false });
     if (result.code !== 0) {
       throw new Error(`Shell command error: ${result.stderr.trim()}\n> ${cmd}`);
@@ -82,7 +80,6 @@ class Cormorants {
     const matches = stdout.match(/<answer>([\s\S]*)<\/answer>/);
     const text = matches ? matches[1] : '';
     if (this.badWords.isProfane(text)) {
-      console.log(`Disregarding: ${text}`);
       return await this.answer(question);
     }
     return this.toSentence(text);
@@ -112,7 +109,7 @@ class Cormorants {
     }
     const ask = sample(asks);
     const question = this.question(ask);
-    const answer = this.forceAnswer || (await this.answer(question));
+    const answer = await this.answer(question);
     return {
       ask,
       question,
