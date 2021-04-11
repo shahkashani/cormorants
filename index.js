@@ -73,7 +73,7 @@ class Cormorants {
 
   async answer(question) {
     // Truly batshit crazy, but Tensorflow versions step all over each other so we need to sandbox it.
-    const cmd = `node ask.js "${question}" "${this.corpus}" ${this.maxCorpusLength}`;
+    const cmd = `node "${__dirname}/ask.js" "${question}" "${this.corpus}" ${this.maxCorpusLength}`;
     const result = exec(cmd, { silent: false });
     if (result.code !== 0) {
       throw new Error(`Shell command error: ${result.stderr.trim()}\n> ${cmd}`);
