@@ -1,7 +1,6 @@
 require('dotenv').config();
 
 const Cormorants = require('./index');
-const { readFileSync } = require('fs');
 
 const {
   ACCESS_TOKEN_KEY,
@@ -12,9 +11,12 @@ const {
   BANNED_WORDS,
 } = process.env;
 
-const corpus = readFileSync(
-  '../fieriframes/captions/lyrics/joanna-newsom-ys.txt'
-).toString();
+const corpus = process.argv[2];
+
+if (!corpus) {
+  console.log('The first arg needs to be a corpus');
+  process.exit(1);
+}
 
 const mysteries = new Cormorants({
   corpus,

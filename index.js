@@ -1,7 +1,7 @@
 const { map, sample, random, upperFirst, compact } = require('lodash');
 const tumblr = require('tumblr.js');
-const { QAClient, initModel } = require('question-answering-tf3');
 const BadWords = require('bad-words');
+const { exec } = require('shelljs');
 
 class Cormorants {
   constructor({
@@ -13,6 +13,7 @@ class Cormorants {
     corpus,
     bannedWords = [],
     maxCorpusLength = 10000,
+    forceAnswer,
   }) {
     this.client = tumblr.createClient({
       consumer_key: consumerKey,
@@ -25,8 +26,10 @@ class Cormorants {
     this.maxCorpusLength = maxCorpusLength;
     this.blogName = blogName;
     this.bannedWords;
+    this.forceAnswer = forceAnswer;
     this.badWords = new BadWords();
     this.badWords.addWords(...bannedWords);
+    this.badWords.removeWords('God');
   }
 
   async posts() {
@@ -68,20 +71,16 @@ class Cormorants {
     return compact(map(post.content, 'text')).join(' ');
   }
 
-  getCorpus() {
-    if (
-      !Number.isFinite(this.maxCorpusLength) ||
-      this.corpus.length <= this.maxCorpusLength
-    ) {
-      return this.corpus;
-    }
-    const startIndex = random(0, this.corpus.length - this.maxCorpusLength);
-    return this.corpus.slice(startIndex, startIndex + this.maxCorpusLength);
-  }
-
   async answer(question) {
-    const qaClient = await QAClient.fromOptions();
-    const { text } = await qaClient.predict(question, this.getCorpus());
+    // Truly batshit crazy, but Tensorflow versions step all over each other so we need to sandbox it.
+    const cmd = `node ask.js "${question}" "${this.corpus}" ${this.maxCorpusLength}`;
+    const result = exec(cmd, { silent: false });
+    if (result.code !== 0) {
+      throw new Error(`Shell command error: ${result.stderr.trim()}\n> ${cmd}`);
+    }
+    const stdout = result.stdout.trim();
+    const matches = stdout.match(/<answer>([\s\S]*)<\/answer>/);
+    const text = matches ? matches[1] : '';
     if (this.badWords.isProfane(text)) {
       console.log(`Disregarding: ${text}`);
       return await this.answer(question);
@@ -94,7 +93,8 @@ class Cormorants {
       return '';
     }
     const punc = new RegExp(/[.?!]$/).test(string) ? '' : '.';
-    return `${upperFirst(string)}${punc}`;
+    const clean = string.replace(/[\n\r]/g, ' ').replace(/\s{2,}/g, ' ');
+    return `${upperFirst(clean)}${punc}`;
   }
 
   getBaseParams(apiPath) {
@@ -112,7 +112,7 @@ class Cormorants {
     }
     const ask = sample(asks);
     const question = this.question(ask);
-    const answer = await this.answer(question);
+    const answer = this.forceAnswer || (await this.answer(question));
     return {
       ask,
       question,
