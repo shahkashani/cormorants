@@ -14,6 +14,9 @@ class Cormorants {
     modelName = 'deepset/bert-base-cased-squad2',
     bannedWords = [],
     maxCorpusLength = 10000,
+    isVerbose = false,
+    isIncludeMedia = false,
+    filterText = null,
   }) {
     this.client = tumblr.createClient({
       consumer_key: consumerKey,
@@ -30,6 +33,9 @@ class Cormorants {
     this.badWords = new BadWords();
     this.badWords.addWords(...bannedWords);
     this.badWords.removeWords('God');
+    this.isVerbose = isVerbose;
+    this.isIncludeMedia = isIncludeMedia;
+    this.filterText = filterText;
   }
 
   async posts() {
@@ -55,18 +61,48 @@ class Cormorants {
   }
 
   filter(post) {
-    if (post.content.some(({ type }) => type !== 'text')) {
-      return false;
-    }
     const text = this.question(post);
+    if (!this.isIncludeMedia) {
+      if (post.content.some(({ type }) => type !== 'text')) {
+        if (this.isVerbose) {
+          console.log(`🦅 Skipping [media]: ${text}`);
+        }
+        return false;
+      }
+    }
+    if (this.filterText) {
+      if (text.toLowerCase().indexOf(this.filterText.toLowerCase()) === -1) {
+        if (this.isVerbose) {
+          console.log(
+            `🦅 Skipping ["${this.filterText}"]: ${text}`
+          );
+        }
+        return false;
+      }
+    }
     if (this.badWords.isProfane(text)) {
+      if (this.isVerbose) {
+        console.log(`🦅 Skipping [profanity]: ${text}`);
+      }
       return false;
     }
     return true;
   }
 
+  images(post) {
+    const images = post.content.filter(({ type }) => type === 'image');
+    return images.map((image) => {
+      const { type, url, width, height } = image.media[0];
+      return { type, url, width, height };
+    });
+  }
+
   question(post) {
-    return compact(map(post.content, 'text')).join(' ');
+    const line = compact(map(post.content, 'text'))
+      .join(' ')
+      .replace(/\s{2,}/g, ' ');
+    const clean = line.trim().replace(/[.,?:]$/, '');
+    return `${clean}?`;
   }
 
   async answer(question) {
@@ -110,7 +146,9 @@ class Cormorants {
     const ask = sample(asks);
     const question = this.question(ask);
     const answer = await this.answer(question);
+    const images = this.images(ask);
     return {
+      images,
       ask,
       question,
       answer,

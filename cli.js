@@ -10,23 +10,18 @@ const {
   BLOG_NAME,
   BANNED_WORDS,
   CORMORANTS_MODEL_NAME,
+  CORMORANTS_CORPUS,
 } = process.env;
 
-const corpus = process.argv[2];
-
-if (!corpus) {
-  console.log('The first arg needs to be a corpus');
-  process.exit(1);
-}
-
 const mysteries = new Cormorants({
-  corpus,
   accessTokenKey: ACCESS_TOKEN_KEY,
   accessTokenSecret: ACCESS_TOKEN_SECRET,
   consumerKey: CONSUMER_KEY,
   consumerSecret: CONSUMER_SECRET,
   blogName: BLOG_NAME,
   modelName: CORMORANTS_MODEL_NAME,
+  corpus: CORMORANTS_CORPUS,
+  isVerbose: true,
   bannedWords: (BANNED_WORDS || '').split(','),
 });
 
