@@ -1,4 +1,4 @@
-const { map, sample, random, upperFirst, compact } = require('lodash');
+const { map, sample, upperFirst, compact, countBy } = require('lodash');
 const tumblr = require('tumblr.js');
 const BadWords = require('bad-words');
 const { exec } = require('shelljs');
@@ -73,9 +73,7 @@ class Cormorants {
     if (this.filterText) {
       if (text.toLowerCase().indexOf(this.filterText.toLowerCase()) === -1) {
         if (this.isVerbose) {
-          console.log(
-            `🦅 Skipping ["${this.filterText}"]: ${text}`
-          );
+          console.log(`🦅 Skipping ["${this.filterText}"]: ${text}`);
         }
         return false;
       }
@@ -121,10 +119,36 @@ class Cormorants {
     return this.toSentence(text);
   }
 
-  toSentence(string) {
-    if (!string) {
+  count(str, ch) {
+    return countBy(str)[ch] || 0;
+  }
+
+  toClean(text) {
+    const bookends = [
+      ['“', '”'],
+      ['(', ')'],
+      ['[', ']'],
+    ];
+    const doubles = ['"'];
+    let sanitized = text.trim();
+    bookends.forEach(([open, close]) => {
+      if (sanitized.indexOf(open) === -1 || sanitized.indexOf(close) === -1) {
+        sanitized = sanitized.replace(open, '').replace(close, '');
+      }
+    });
+    doubles.forEach((double) => {
+      if (this.count(sanitized, double) === 1) {
+        sanitized = sanitized.replace(double, '');
+      }
+    });
+    return sanitized;
+  }
+
+  toSentence(rawString) {
+    if (!rawString) {
       return '';
     }
+    const string = this.toClean(rawString);
     const punc = new RegExp(/[.?!]$/).test(string) ? '' : '.';
     const clean = string.replace(/[\n\r]/g, ' ').replace(/\s{2,}/g, ' ');
     return `${upperFirst(clean)}${punc}`;
