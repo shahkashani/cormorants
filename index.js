@@ -17,6 +17,8 @@ class Cormorants {
     isVerbose = false,
     isIncludeMedia = false,
     filterText = null,
+    setQuestion = null,
+    setAnswer = null,
   }) {
     this.client = tumblr.createClient({
       consumer_key: consumerKey,
@@ -36,6 +38,8 @@ class Cormorants {
     this.isVerbose = isVerbose;
     this.isIncludeMedia = isIncludeMedia;
     this.filterText = filterText;
+    this.setQuestion = setQuestion;
+    this.setAnswer = setAnswer;
   }
 
   async posts() {
@@ -168,8 +172,10 @@ class Cormorants {
       return null;
     }
     const ask = sample(asks);
-    const question = this.question(ask);
-    const answer = await this.answer(question);
+    console.log(`🦅 Ask: ${this.question(ask)}`);
+    console.log(JSON.stringify(ask, null, 2));
+    const question = this.setQuestion || this.question(ask);
+    const answer = this.setAnswer || (await this.answer(question));
     const images = this.images(ask);
     return {
       images,
