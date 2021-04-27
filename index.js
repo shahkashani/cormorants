@@ -45,20 +45,24 @@ class Cormorants {
   async posts() {
     const results = [];
     let isTraversing = true;
-    let offset = 0;
+    let beforeId = undefined;
     while (isTraversing) {
+      if (this.isVerbose) {
+        console.log(`🦅  Getting posts before ID ${beforeId}`);
+      }
       const { posts, _links } = await this.client.blogSubmissions(
         this.blogName,
         {
           npf: true,
-          offset,
+          limit: 50,
+          before_id: beforeId,
         }
       );
       results.push.apply(results, posts);
       if (posts.length === 0 || !_links || !_links.next) {
         isTraversing = false;
       } else {
-        offset = _links.next.query_params.offset;
+        beforeId = _links.next.query_params.before_id;
       }
     }
     return results.filter((p) => this.filter(p));
