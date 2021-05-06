@@ -14,6 +14,7 @@ class Cormorants {
     modelName = 'deepset/bert-base-cased-squad2',
     bannedWords = [],
     maxCorpusLength = 10000,
+    minWords = null,
     isVerbose = false,
     isIncludeMedia = false,
     filterText = null,
@@ -40,6 +41,7 @@ class Cormorants {
     this.filterText = filterText;
     this.setQuestion = setQuestion;
     this.setAnswer = setAnswer;
+    this.minWords = minWords;
   }
 
   async posts() {
@@ -121,7 +123,10 @@ class Cormorants {
     const stdout = result.stdout.trim();
     const matches = stdout.match(/<answer>([\s\S]*)<\/answer>/);
     const text = matches ? matches[1] : '';
-    if (this.badWords.isProfane(text)) {
+    if (
+      this.badWords.isProfane(text) ||
+      (this.minWords && text.split(/\s/).length < this.minWords)
+    ) {
       return await this.answer(question);
     }
     return this.toSentence(text);
