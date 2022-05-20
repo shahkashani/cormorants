@@ -1,6 +1,5 @@
 const { map, sample, upperFirst, compact, countBy } = require('lodash');
 const tumblr = require('tumblr.js');
-const BadWords = require('bad-words');
 const { exec } = require('shelljs');
 
 class Cormorants {
@@ -12,7 +11,6 @@ class Cormorants {
     blogName,
     corpus,
     modelName = 'deepset/bert-base-cased-squad2',
-    bannedWords = [],
     maxCorpusLength = 10000,
     minWords = null,
     isVerbose = false,
@@ -20,6 +18,7 @@ class Cormorants {
     filterText = null,
     setQuestion = null,
     setAnswer = null,
+    moderation = null,
   }) {
     this.client = tumblr.createClient({
       consumer_key: consumerKey,
@@ -32,16 +31,22 @@ class Cormorants {
     this.corpus = corpus;
     this.maxCorpusLength = maxCorpusLength;
     this.blogName = blogName;
-    this.bannedWords;
-    this.badWords = new BadWords();
-    this.badWords.addWords(...bannedWords);
-    this.badWords.removeWords('God');
     this.isVerbose = isVerbose;
     this.isIncludeMedia = isIncludeMedia;
     this.filterText = filterText;
     this.setQuestion = setQuestion;
     this.setAnswer = setAnswer;
     this.minWords = minWords;
+    this.moderation = moderation;
+  }
+
+  async filter(arr, callback) {
+    const fail = Symbol();
+    return (
+      await Promise.all(
+        arr.map(async (item) => ((await callback(item)) ? item : fail))
+      )
+    ).filter((i) => i !== fail);
   }
 
   async posts() {
@@ -50,7 +55,9 @@ class Cormorants {
     let beforeId = undefined;
     while (isTraversing) {
       if (this.isVerbose) {
-        console.log(`🦅  Getting posts before ID ${beforeId}`);
+        console.log(
+          `🦅  Getting posts${beforeId ? ` (before ID ${beforeId})` : '...'}`
+        );
       }
       const { posts, _links } = await this.client.blogSubmissions(
         this.blogName,
@@ -67,10 +74,10 @@ class Cormorants {
         beforeId = _links.next.query_params.before_id;
       }
     }
-    return results.filter((p) => this.filter(p));
+    return this.filter(results, (t) => this.filterFn(t));
   }
 
-  filter(post) {
+  async filterFn(post) {
     const text = this.question(post);
     if (!this.isIncludeMedia) {
       if (post.content.some(({ type }) => type !== 'text')) {
@@ -88,11 +95,13 @@ class Cormorants {
         return false;
       }
     }
-    if (this.badWords.isProfane(text)) {
-      if (this.isVerbose) {
-        console.log(`🦅 Skipping [profanity]: ${text}`);
+    if (this.moderation) {
+      if (!(await this.moderation.validate(text))) {
+        if (this.isVerbose) {
+          console.log(`🦅 Skipping [profanity]: ${text}`);
+        }
+        return false;
       }
-      return false;
     }
     return true;
   }
@@ -125,7 +134,7 @@ class Cormorants {
     const matches = stdout.match(/<answer>([\s\S]*)<\/answer>/);
     const text = matches ? matches[1] : '';
     if (
-      this.badWords.isProfane(text) ||
+      (this.moderation && !(await this.moderation.validate(text))) ||
       (this.minWords && text.split(/\s/).length < this.minWords)
     ) {
       return await this.answer(question);
