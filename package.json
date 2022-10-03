@@ -9,8 +9,10 @@
     "dotenv": "^8.2.0",
     "lodash": "^4.17.21",
     "pdf-parse": "^1.1.1",
-    "question-answering": "^3.0.0",
     "shelljs": "^0.8.4",
     "tumblr.js": "^3.0.0"
+  },
+  "overrides": {
+    "tokenizers": "0.8.6"
   }
 }
