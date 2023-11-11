@@ -34,7 +34,7 @@ class Cormorants {
 
   filter(post) {
     const rest = this.getRest(post);
-    return !rest || !rest.find(({ type }) => type === TYPE_IMAGE);
+    return rest && !rest.find(({ type }) => type === TYPE_IMAGE);
   }
 
   async posts() {
@@ -59,9 +59,12 @@ class Cormorants {
   }
 
   getCaptions(post) {
-    return this.getRest(post)
-      .filter(({ type }) => type === TYPE_TEXT)
-      .map(({ text }) => text);
+    const rest = this.getRest(post);
+    return rest
+      ? this.getRest(post)
+          .filter(({ type }) => type === TYPE_TEXT)
+          .map(({ text }) => text)
+      : [];
   }
 
   async getNextAsk() {
