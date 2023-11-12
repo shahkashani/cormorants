@@ -64,6 +64,7 @@ class Cormorants {
       ? this.getRest(post)
           .filter(({ type }) => type === TYPE_TEXT)
           .map(({ text }) => text)
+          .map((text) => text.replace(/(^\[|\]$)/g, ''))
       : [];
   }
 
