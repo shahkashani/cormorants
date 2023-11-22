@@ -21,6 +21,6 @@ const mysteries = new Cormorants({
 });
 
 (async function () {
-  console.log(await mysteries.getNextAsk());
+  console.log(await mysteries.getAllAsks());
   process.exit(0);
 })();

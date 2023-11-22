@@ -68,17 +68,28 @@ class Cormorants {
       : [];
   }
 
+  format(ask) {
+    return {
+      ask,
+      captions: this.getCaptions(ask),
+    };
+  }
+
   async getNextAsk() {
     const asks = await this.posts();
     if (asks.length === 0) {
       return null;
     }
     const [ask] = asks;
-    const captions = this.getCaptions(ask);
-    return {
-      ask,
-      captions,
-    };
+    return this.format(ask);
+  }
+
+  async getAllAsks() {
+    const asks = await this.posts();
+    if (asks.length === 0) {
+      return null;
+    }
+    return asks.map((ask) => this.format(ask));
   }
 }
 
